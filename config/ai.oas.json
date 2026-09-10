@@ -101,6 +101,28 @@
         }
       }
     },
+    "/demo/mock-completion-quota": {
+      "get": {
+        "summary": "TEMP: mock completion metered via the built-in QuotaInboundPolicy instead of ZoneCache",
+        "description": "Same synthetic completion as /demo/mock-completion, but the $0.10/hour cap is enforced via generic-quota-cost-inbound (QuotaInboundPolicy, quotaBy: user) + generic-quota-cost-meter-inbound, instead of our own ZoneCache-based generic-cost-quota-inbound. Experimental comparison route.",
+        "operationId": "mockCompletionQuota",
+        "responses": {
+          "200": { "description": "Synthetic completion response with usage/model fields" },
+          "429": { "description": "Hourly $ quota exceeded for this caller" }
+        },
+        "x-zuplo-route": {
+          "corsPolicy": "none",
+          "handler": {
+            "export": "default",
+            "module": "$import(./modules/mock-completion-handler)",
+            "options": {}
+          },
+          "policies": {
+            "inbound": ["generic-jwt-auth-inbound", "generic-quota-cost-inbound", "generic-quota-cost-meter-inbound"]
+          }
+        }
+      }
+    },
     "/:app_id/(.*)": {
       "x-zuplo-path": {
         "pathMode": "url-pattern"

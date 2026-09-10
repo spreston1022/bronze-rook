@@ -33,6 +33,15 @@
     },
     {
       "handler": {
+        "export": "default",
+        "module": "$import(./modules/set-user-header-inbound)",
+        "options": {}
+      },
+      "name": "generic-set-user-header-inbound",
+      "policyType": "custom-code-inbound"
+    },
+    {
+      "handler": {
         "export": "AIGatewayConfigurationLoaderV2InboundPolicy",
         "module": "$import(@zuplo/runtime)",
         "options": {

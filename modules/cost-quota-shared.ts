@@ -1,4 +1,4 @@
-export const HOURLY_LIMIT_USD = 2.0;
+export const HOURLY_LIMIT_USD = 0.1;
 export const TTL_SECONDS = 3600;
 export const CACHE_NAMESPACE = "generic-cost-quota";
 export const ANONYMOUS_IDENTITY = "anonymous";

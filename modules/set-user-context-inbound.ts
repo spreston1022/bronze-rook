@@ -11,8 +11,10 @@ import { ZuploContext, ZuploRequest } from "@zuplo/runtime";
 // generic-jwt-auth-inbound in the chain.
 export default async function (request: ZuploRequest, context: ZuploContext) {
   const sub = request.user?.sub;
+  context.log.info({ sub, hasUser: !!request.user }, "set-user-context: setting context.custom.userSub");
   if (sub) {
     context.custom.userSub = sub;
   }
+  context.log.info({ userSub: context.custom.userSub }, "set-user-context: context.custom after assignment");
   return request;
 }

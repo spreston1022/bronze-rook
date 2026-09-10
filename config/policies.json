@@ -23,7 +23,6 @@
       "policyType": "open-id-jwt-auth-inbound"
     },
     {
-      "description": "Enforces a $0.10/hour spend cap per JWT sub, backed by ZoneCache.",
       "handler": {
         "export": "default",
         "module": "$import(./modules/cost-quota-inbound)",
@@ -33,7 +32,6 @@
       "policyType": "custom-code-inbound"
     },
     {
-      "description": "Copies the verified JWT sub onto context.custom.userSub for native Budgets and Costs expressions.",
       "handler": {
         "export": "default",
         "module": "$import(./modules/set-user-context-inbound)",

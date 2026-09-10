@@ -75,18 +75,6 @@
         }
       }
     },
-    "/demo/debug-fetch": {
-      "get": {
-        "summary": "TEMP debug: fetch a URL from inside the deployed worker",
-        "operationId": "debugFetch",
-        "responses": { "200": { "description": "debug" } },
-        "x-zuplo-route": {
-          "corsPolicy": "none",
-          "handler": { "export": "default", "module": "$import(./modules/debug-fetch-handler)", "options": {} },
-          "policies": { "inbound": [] }
-        }
-      }
-    },
     "/demo/mock-completion": {
       "get": {
         "summary": "Mock completion for exercising the cost quota without a real model",

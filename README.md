@@ -52,6 +52,13 @@ quota policy runs):
 "inboundPolicyChain": ["generic-jwt-auth-inbound", "generic-cost-quota-inbound"]
 ```
 
+- `GET /demo/mock-completion` (`modules/mock-completion-handler.ts`) runs
+  `generic-jwt-auth-inbound` then `generic-cost-quota-inbound` and returns a
+  synthetic, OpenAI-shaped completion whose token usage is set via
+  `?model=`, `?promptTokens=`, `?completionTokens=` query params — lets you
+  drive a caller's simulated spend up to (and past) the $2/hour limit
+  without calling or paying for a real AI provider.
+
 ### Testing without a real IDP
 
 This repo also self-hosts a minimal demo IDP so the example is runnable out
@@ -60,7 +67,8 @@ of the box:
 - `GET /.well-known/openid-configuration` and `GET /.well-known/jwks.json`
   (`modules/demo-idp-openid-config-handler.ts`,
   `modules/demo-idp-jwks-handler.ts`) publish discovery metadata and a public
-  key for a demo-only RSA keypair.
+  key for a demo-only RSA keypair. A static copy of the same JWKS also lives
+  at `config/demo-jwks.json` (see below for why).
 - `scripts/mint-demo-jwt.mjs` signs a test JWT with the matching private key
   (plain Node `crypto`, no dependencies):
 
@@ -72,6 +80,24 @@ of the box:
   `inboundPolicyChain` includes `generic-jwt-auth-inbound`, with `JWT_ISSUER`
   / `JWT_JWKS_URL` set to this gateway's own URL (see `.env.example`).
 
-This demo IDP and its keypair are for local testing only — swap `JWT_ISSUER`,
+This demo IDP and its keypair are for testing only — swap `JWT_ISSUER`,
 `JWT_AUDIENCE`, and `JWT_JWKS_URL` to point at a real IDP for production, and
 the `generic-jwt-auth-inbound` policy needs no other changes.
+
+**Important — self-hosting the JWKS only works for local `zuplo dev`, not
+once deployed.** Cloudflare Workers can't make an outbound `fetch()` back to
+their own zone/domain (it times out with a 522), so once this gateway is
+deployed, `OpenIdJwtInboundPolicy` can never successfully fetch a `jwkUrl`
+that points back at this same gateway's own domain — `/.well-known/jwks.json`
+included. For local dev, point `JWT_JWKS_URL` at
+`http://localhost:9000/.well-known/jwks.json` as usual. For testing against a
+**deployed** gateway, point `JWT_JWKS_URL` at the static copy served from
+GitHub instead (`JWT_ISSUER` can still be the deployed gateway's own URL —
+issuer is just an identifier string, it doesn't need to be fetchable):
+
+```
+JWT_JWKS_URL=https://raw.githubusercontent.com/<org>/<repo>/main/config/demo-jwks.json
+```
+
+A real IDP (Okta, Auth0, etc.) never hits this problem, since its JWKS lives
+on a different domain than your gateway.

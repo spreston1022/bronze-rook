@@ -63,18 +63,26 @@ quota policy runs):
 If an app also requires its own API key (`ai-gateway-auth-v2-inbound`), both
 that policy and `OpenIdJwtInboundPolicy` default to reading
 `Authorization: Bearer <value>` — they collide on the same header. Move the
-end-user JWT to a different header via `generic-jwt-auth-inbound`'s
-`authHeader` option (e.g. `x-jwt-token`), leaving `Authorization` for the
-app's API key:
+**app's API key** to a different header instead of moving the JWT —
+`ai-gateway-auth-v2-inbound` supports this via its own `authHeader` /
+`authScheme` options, leaving `Authorization: Bearer <token>` for the
+end-user JWT (the standard OAuth/OIDC convention most JWT-consuming clients
+expect and can't easily be reconfigured away from):
 
 ```json
-{ "authHeader": "x-jwt-token" }
+{ "authHeader": "x-api-key", "authScheme": "" }
 ```
 
-**Gotcha:** setting a custom `authHeader` does *not* change the default
-`authScheme` (`Bearer`) — you still have to send
-`x-jwt-token: Bearer <token>`, not just the raw token. It's easy to assume a
-custom header name means "just put the raw value here"; it doesn't.
+With `authScheme` set to an empty string, clients send just the raw key with
+no prefix: `x-api-key: <app-api-key>`. `generic-jwt-auth-inbound` then keeps
+its default `Authorization: Bearer <token>`, with no options needed.
+
+**Gotcha (if you go the other way and move the JWT instead):** setting a
+custom `authHeader` on `OpenIdJwtInboundPolicy` does *not* change its default
+`authScheme` (`Bearer`) — the token still needs the `Bearer ` prefix on the
+new header too (e.g. `x-jwt-token: Bearer <token>`, not just the raw token).
+It's easy to assume a custom header name means "just put the raw value
+here"; it doesn't.
 
 ### Testing without a real IDP
 

@@ -75,6 +75,32 @@
         }
       }
     },
+    "/demo/mock-completion": {
+      "get": {
+        "summary": "Mock completion for exercising the cost quota without a real model",
+        "description": "Requires generic-jwt-auth-inbound, then runs generic-cost-quota-inbound before returning a synthetic OpenAI-shaped completion whose token usage is set via ?model=, ?promptTokens=, ?completionTokens= query params. Lets you drive a caller's simulated spend up to (and past) the $2/hour limit without calling or paying for a real AI provider.",
+        "operationId": "mockCompletion",
+        "responses": {
+          "200": {
+            "description": "Synthetic completion response with usage/model fields"
+          },
+          "429": {
+            "description": "Hourly $ quota exceeded for this caller"
+          }
+        },
+        "x-zuplo-route": {
+          "corsPolicy": "none",
+          "handler": {
+            "export": "default",
+            "module": "$import(./modules/mock-completion-handler)",
+            "options": {}
+          },
+          "policies": {
+            "inbound": ["generic-jwt-auth-inbound", "generic-cost-quota-inbound"]
+          }
+        }
+      }
+    },
     "/:app_id/(.*)": {
       "x-zuplo-path": {
         "pathMode": "url-pattern"

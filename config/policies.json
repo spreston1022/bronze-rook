@@ -33,28 +33,6 @@
     },
     {
       "handler": {
-        "export": "QuotaInboundPolicy",
-        "module": "$import(@zuplo/runtime)",
-        "options": {
-          "period": "hourly",
-          "quotaBy": "user",
-          "allowances": { "cost": 0.1 }
-        }
-      },
-      "name": "generic-quota-cost-inbound",
-      "policyType": "quota-inbound-policy"
-    },
-    {
-      "handler": {
-        "export": "default",
-        "module": "$import(./modules/quota-cost-inbound)",
-        "options": {}
-      },
-      "name": "generic-quota-cost-meter-inbound",
-      "policyType": "custom-code-inbound"
-    },
-    {
-      "handler": {
         "export": "AIGatewayConfigurationLoaderV2InboundPolicy",
         "module": "$import(@zuplo/runtime)",
         "options": {

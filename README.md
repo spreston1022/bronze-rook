@@ -70,12 +70,15 @@ end-user JWT (the standard OAuth/OIDC convention most JWT-consuming clients
 expect and can't easily be reconfigured away from):
 
 ```json
-{ "authHeader": "x-api-key", "authScheme": "" }
+{ "authHeader": "x-api-key" }
 ```
 
-With `authScheme` set to an empty string, clients send just the raw key with
-no prefix: `x-api-key: <app-api-key>`. `generic-jwt-auth-inbound` then keeps
-its default `Authorization: Bearer <token>`, with no options needed.
+Leave `authScheme` alone — it still defaults to `Bearer`, so clients send
+`x-api-key: Bearer <app-api-key>`. (In the Zuplo portal, leaving the
+`AuthScheme` field blank keeps this `Bearer` default; there's a separate
+"Use an empty value" toggle if you actually want no prefix at all, which
+isn't required here.) `generic-jwt-auth-inbound` keeps its default
+`Authorization: Bearer <token>`, with no options needed.
 
 **Gotcha (if you go the other way and move the JWT instead):** setting a
 custom `authHeader` on `OpenIdJwtInboundPolicy` does *not* change its default

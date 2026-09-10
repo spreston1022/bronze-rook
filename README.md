@@ -20,6 +20,8 @@ for every application on the route.
 - Declare additional selectable policies (including custom code policies) in
   `config/policies.json`.
 - Pushes to your default branch deploy the gateway to production.
+- Trivial redeploy trigger: 2026-09-10a (force-refresh JWT policy after
+  JWT_ISSUER/JWT_AUDIENCE/JWT_JWKS_URL were added post-deploy).
 
 ## Example: generic JWT auth + per-user $/hour quota
 

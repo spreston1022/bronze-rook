@@ -25,8 +25,10 @@ for every application on the route.
 
 ## Example: generic JWT auth + per-user $/hour quota
 
-Two selectable policies demonstrate a common pattern — authenticate a caller
-with a JWT from any OIDC IDP, then cap their spend by the `sub` claim:
+Two selectable policies, plus one native AI Gateway policy configured per
+app, demonstrate authenticating a caller with a JWT from any OIDC IDP, then
+capping their spend by the `sub` claim — using Zuplo's own AI Gateway
+metering and pricing, not a hand-maintained pricing table:
 
 - **`generic-jwt-auth-inbound`** — the built-in `OpenIdJwtInboundPolicy`,
   configured entirely from environment variables (`JWT_ISSUER`,
@@ -34,29 +36,58 @@ with a JWT from any OIDC IDP, then cap their spend by the `sub` claim:
   Auth0, Zuplo Auth, or any other IDP that exposes standard OIDC discovery —
   no code changes needed. On success it populates `request.user.sub` from the
   token's `sub` claim.
-- **`generic-cost-quota-inbound`** (`modules/cost-quota-inbound.ts`) — reads
-  `request.user.sub` and enforces a **$0.10/hour** spend cap per user, in a
-  fixed hourly window (resets on the hour, UTC). It rejects with 429 if the
-  caller is already over budget, otherwise lets the request through and
-  meters the actual cost afterward from the AI response's `usage` and `model`
-  fields, using the example pricing table in `modules/cost-quota-shared.ts`
-  (`MODEL_PRICING_PER_MILLION_TOKENS` — replace with your real provider
-  rates). `modules/cost-quota-usage-handler.ts` exposes the running total at
-  `GET /demo/cost-usage`.
-- `GET /demo/mock-completion` (`modules/mock-completion-handler.ts`) runs
-  `generic-jwt-auth-inbound` then `generic-cost-quota-inbound` and returns a
-  synthetic, OpenAI-shaped completion whose token usage is set via
-  `?model=`, `?promptTokens=`, `?completionTokens=` query params — lets you
-  drive a caller's simulated spend up to (and past) the $0.10/hour limit
-  without calling or paying for a real AI provider.
+- **`generic-set-user-context-inbound`** (`modules/set-user-context-inbound.ts`)
+  — copies the verified `request.user.sub` onto `context.custom.userSub`.
+  This exists because the native AI Gateway Metering policy's
+  `budgetBy: "expression"` rules resolve `request.user.sub` against the
+  **API-key consumer** identity (confirmed directly with Zuplo), not
+  whatever a later JWT policy sets — so a small bridge is needed to expose
+  the JWT identity somewhere a native expression can actually read it.
+  `context.custom` is a plain in-memory value shared between policies in the
+  same request; nothing is added to the request itself, so nothing leaks to
+  the upstream provider or shows up as an extra header in logs.
+- **The native "Budgets and Costs" policy** (`ai-gateway-metering-v2-inbound`,
+  already selectable via `config/policies.json`) — add it to the app's
+  `inboundPolicyChain` and configure a budget rule keyed by
+  `context.custom.userSub` in the Portal (Policies → Budgets and Costs →
+  "By metadata"):
 
-An application enables this by including both policies, in order, in its
-`inboundPolicyChain` (JWT auth first, so `request.user.sub` exists when the
-quota policy runs):
+  ```json
+  {
+    "budgetBy": "expression",
+    "expression": "context.custom.userSub",
+    "meters": [
+      { "meter": "cost", "period": "hourly", "value": 0.10, "action": "block" }
+    ]
+  }
+  ```
+
+  This gives every distinct JWT `sub` its own $0.10/hour budget, computed
+  from Zuplo's own per-model pricing (Settings → AI Providers), not a
+  pricing table you maintain yourself. The Portal labels an expression
+  rooted at `context.custom.*` as **"Gateway-derived"** to distinguish it
+  from consumer-metadata-backed expressions like `request.user.sub`.
+
+An application enables this by including both custom policies, in order, in
+its `inboundPolicyChain` (JWT auth first, so `request.user.sub` exists when
+the bridge runs; the bridge before Budgets and Costs, so
+`context.custom.userSub` exists when the budget rule evaluates it):
 
 ```json
-"inboundPolicyChain": ["generic-jwt-auth-inbound", "generic-cost-quota-inbound"]
+"inboundPolicyChain": ["generic-jwt-auth-inbound", "generic-set-user-context-inbound", "..."]
 ```
+
+The Budgets and Costs budget rule itself is configured per-app in the
+Portal, not in this repo — it isn't part of `inboundPolicyChain` JSON, so
+there's nothing to check into git for that piece beyond adding the policy
+to the chain.
+
+**Gotcha:** `config/policies.json` policy entries only accept `handler`,
+`name`, and `policyType` — no `description` or other field, even though it
+seems like a natural thing to add for documentation. An extra field fails
+schema validation and breaks every subsequent deploy, but `git push`
+succeeds either way — the failure only shows up in the Portal's build
+history, so check there if changes don't seem to be taking effect.
 
 ### Combining with `ai-gateway-auth-v2-inbound` (app API keys)
 

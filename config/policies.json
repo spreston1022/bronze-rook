@@ -25,15 +25,6 @@
     {
       "handler": {
         "export": "default",
-        "module": "$import(./modules/cost-quota-inbound)",
-        "options": {}
-      },
-      "name": "generic-cost-quota-inbound",
-      "policyType": "custom-code-inbound"
-    },
-    {
-      "handler": {
-        "export": "default",
         "module": "$import(./modules/set-user-context-inbound)",
         "options": {}
       },

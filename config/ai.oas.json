@@ -101,6 +101,18 @@
         }
       }
     },
+    "/demo/debug-quota-usage": {
+      "get": {
+        "summary": "TEMP debug: raw QuotaInboundPolicy.getUsage() for generic-quota-cost-inbound",
+        "operationId": "debugQuotaUsage",
+        "responses": { "200": { "description": "debug" } },
+        "x-zuplo-route": {
+          "corsPolicy": "none",
+          "handler": { "export": "default", "module": "$import(./modules/debug-quota-usage-handler)", "options": {} },
+          "policies": { "inbound": ["generic-jwt-auth-inbound", "generic-quota-cost-inbound"] }
+        }
+      }
+    },
     "/demo/mock-completion-quota": {
       "get": {
         "summary": "TEMP: mock completion metered via the built-in QuotaInboundPolicy instead of ZoneCache",

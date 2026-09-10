@@ -6,6 +6,75 @@
     "description": "A unified API gateway for multiple AI providers. OpenAI-compatible ops are served under /{app_id}/v1/*; other paths under /{app_id} are rejected."
   },
   "paths": {
+    "/.well-known/openid-configuration": {
+      "get": {
+        "summary": "OIDC discovery document for the demo JWT auth issuer",
+        "description": "Minimal OpenID discovery document so OpenIdJwtInboundPolicy can resolve this gateway as a stand-in issuer for local testing of generic-jwt-auth-inbound, matching how a real IDP (Okta, Auth0, etc.) exposes discovery metadata. Point JWT_ISSUER/JWT_JWKS_URL at your real IDP instead for production.",
+        "operationId": "openidConfiguration",
+        "responses": {
+          "200": {
+            "description": "OpenID discovery document"
+          }
+        },
+        "x-zuplo-route": {
+          "corsPolicy": "none",
+          "handler": {
+            "export": "default",
+            "module": "$import(./modules/demo-idp-openid-config-handler)",
+            "options": {}
+          },
+          "policies": {
+            "inbound": []
+          }
+        }
+      }
+    },
+    "/.well-known/jwks.json": {
+      "get": {
+        "summary": "JWKS for the demo JWT auth issuer",
+        "description": "Publishes the public key used to verify JWTs minted by scripts/mint-demo-jwt.mjs, for local testing of generic-jwt-auth-inbound without a real IDP.",
+        "operationId": "jwks",
+        "responses": {
+          "200": {
+            "description": "JSON Web Key Set"
+          }
+        },
+        "x-zuplo-route": {
+          "corsPolicy": "none",
+          "handler": {
+            "export": "default",
+            "module": "$import(./modules/demo-idp-jwks-handler)",
+            "options": {}
+          },
+          "policies": {
+            "inbound": []
+          }
+        }
+      }
+    },
+    "/demo/cost-usage": {
+      "get": {
+        "summary": "Look up this hour's $ spend quota usage for the caller",
+        "description": "Verifies the caller's JWT with generic-jwt-auth-inbound, then reports their spend against generic-cost-quota-inbound's hourly $ limit, for visualizing usage in a client UI.",
+        "operationId": "costQuotaUsage",
+        "responses": {
+          "200": {
+            "description": "Current $ spend and limit for this caller"
+          }
+        },
+        "x-zuplo-route": {
+          "corsPolicy": "none",
+          "handler": {
+            "export": "default",
+            "module": "$import(./modules/cost-quota-usage-handler)",
+            "options": {}
+          },
+          "policies": {
+            "inbound": ["generic-jwt-auth-inbound"]
+          }
+        }
+      }
+    },
     "/:app_id/(.*)": {
       "x-zuplo-path": {
         "pathMode": "url-pattern"

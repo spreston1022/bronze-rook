@@ -11,6 +11,28 @@
     },
     {
       "handler": {
+        "export": "OpenIdJwtInboundPolicy",
+        "module": "$import(@zuplo/runtime)",
+        "options": {
+          "issuer": "$env(JWT_ISSUER)",
+          "audience": "$env(JWT_AUDIENCE)",
+          "jwkUrl": "$env(JWT_JWKS_URL)"
+        }
+      },
+      "name": "generic-jwt-auth-inbound",
+      "policyType": "open-id-jwt-auth-inbound"
+    },
+    {
+      "handler": {
+        "export": "default",
+        "module": "$import(./modules/cost-quota-inbound)",
+        "options": {}
+      },
+      "name": "generic-cost-quota-inbound",
+      "policyType": "custom-code-inbound"
+    },
+    {
+      "handler": {
         "export": "AIGatewayConfigurationLoaderV2InboundPolicy",
         "module": "$import(@zuplo/runtime)",
         "options": {

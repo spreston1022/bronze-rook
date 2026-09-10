@@ -34,10 +34,10 @@
     {
       "handler": {
         "export": "default",
-        "module": "$import(./modules/set-user-header-inbound)",
+        "module": "$import(./modules/set-user-context-inbound)",
         "options": {}
       },
-      "name": "generic-set-user-header-inbound",
+      "name": "generic-set-user-context-inbound",
       "policyType": "custom-code-inbound"
     },
     {

@@ -102,8 +102,8 @@ This demo IDP and its keypair are for testing only — swap `JWT_ISSUER`,
 the `generic-jwt-auth-inbound` policy needs no other changes.
 
 **Important — self-hosting the JWKS only works for local `zuplo dev`, not
-once deployed.** Cloudflare Workers can't make an outbound `fetch()` back to
-their own zone/domain (it times out with a 522), so once this gateway is
+once deployed.** The deployed edge runtime can't make an outbound `fetch()`
+back to its own zone/domain (the request times out), so once this gateway is
 deployed, `OpenIdJwtInboundPolicy` can never successfully fetch a `jwkUrl`
 that points back at this same gateway's own domain — `/.well-known/jwks.json`
 included. For local dev, point `JWT_JWKS_URL` at

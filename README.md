@@ -35,7 +35,7 @@ with a JWT from any OIDC IDP, then cap their spend by the `sub` claim:
   no code changes needed. On success it populates `request.user.sub` from the
   token's `sub` claim.
 - **`generic-cost-quota-inbound`** (`modules/cost-quota-inbound.ts`) — reads
-  `request.user.sub` and enforces a **$2.00/hour** spend cap per user, in a
+  `request.user.sub` and enforces a **$0.10/hour** spend cap per user, in a
   fixed hourly window (resets on the hour, UTC). It rejects with 429 if the
   caller is already over budget, otherwise lets the request through and
   meters the actual cost afterward from the AI response's `usage` and `model`
@@ -43,6 +43,12 @@ with a JWT from any OIDC IDP, then cap their spend by the `sub` claim:
   (`MODEL_PRICING_PER_MILLION_TOKENS` — replace with your real provider
   rates). `modules/cost-quota-usage-handler.ts` exposes the running total at
   `GET /demo/cost-usage`.
+- `GET /demo/mock-completion` (`modules/mock-completion-handler.ts`) runs
+  `generic-jwt-auth-inbound` then `generic-cost-quota-inbound` and returns a
+  synthetic, OpenAI-shaped completion whose token usage is set via
+  `?model=`, `?promptTokens=`, `?completionTokens=` query params — lets you
+  drive a caller's simulated spend up to (and past) the $0.10/hour limit
+  without calling or paying for a real AI provider.
 
 An application enables this by including both policies, in order, in its
 `inboundPolicyChain` (JWT auth first, so `request.user.sub` exists when the
@@ -52,12 +58,23 @@ quota policy runs):
 "inboundPolicyChain": ["generic-jwt-auth-inbound", "generic-cost-quota-inbound"]
 ```
 
-- `GET /demo/mock-completion` (`modules/mock-completion-handler.ts`) runs
-  `generic-jwt-auth-inbound` then `generic-cost-quota-inbound` and returns a
-  synthetic, OpenAI-shaped completion whose token usage is set via
-  `?model=`, `?promptTokens=`, `?completionTokens=` query params — lets you
-  drive a caller's simulated spend up to (and past) the $2/hour limit
-  without calling or paying for a real AI provider.
+### Combining with `ai-gateway-auth-v2-inbound` (app API keys)
+
+If an app also requires its own API key (`ai-gateway-auth-v2-inbound`), both
+that policy and `OpenIdJwtInboundPolicy` default to reading
+`Authorization: Bearer <value>` — they collide on the same header. Move the
+end-user JWT to a different header via `generic-jwt-auth-inbound`'s
+`authHeader` option (e.g. `x-jwt-token`), leaving `Authorization` for the
+app's API key:
+
+```json
+{ "authHeader": "x-jwt-token" }
+```
+
+**Gotcha:** setting a custom `authHeader` does *not* change the default
+`authScheme` (`Bearer`) — you still have to send
+`x-jwt-token: Bearer <token>`, not just the raw token. It's easy to assume a
+custom header name means "just put the raw value here"; it doesn't.
 
 ### Testing without a real IDP
 

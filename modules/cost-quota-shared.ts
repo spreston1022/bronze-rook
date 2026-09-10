@@ -21,12 +21,37 @@ export const MODEL_PRICING_PER_MILLION_TOKENS: Record<
 
 const DEFAULT_PRICING = { prompt: 1, completion: 2 };
 
+function stripProviderPrefix(model: string): string {
+  const slashIndex = model.indexOf("/");
+  return slashIndex >= 0 ? model.slice(slashIndex + 1) : model;
+}
+
+// Provider responses often return a specific dated snapshot (e.g.
+// "gpt-4o-mini-2024-07-18") rather than the bare name a request specified
+// (e.g. "openai/gpt-4o-mini"). Match by longest base-name prefix so
+// "gpt-4o-mini-2024-07-18" resolves to the "gpt-4o-mini" row, not "gpt-4o".
+function findPricing(model: string): { prompt: number; completion: number } | undefined {
+  if (MODEL_PRICING_PER_MILLION_TOKENS[model]) {
+    return MODEL_PRICING_PER_MILLION_TOKENS[model];
+  }
+  const bareModel = stripProviderPrefix(model);
+  const candidates = Object.entries(MODEL_PRICING_PER_MILLION_TOKENS)
+    .map(([key, pricing]) => ({ base: stripProviderPrefix(key), pricing }))
+    .sort((a, b) => b.base.length - a.base.length);
+  for (const { base, pricing } of candidates) {
+    if (bareModel === base || bareModel.startsWith(`${base}-`)) {
+      return pricing;
+    }
+  }
+  return undefined;
+}
+
 export function costForUsage(
   model: string | undefined,
   promptTokens: number,
   completionTokens: number
 ): number {
-  const pricing = (model ? MODEL_PRICING_PER_MILLION_TOKENS[model] : undefined) ?? DEFAULT_PRICING;
+  const pricing = (model ? findPricing(model) : undefined) ?? DEFAULT_PRICING;
   return (
     (promptTokens / 1_000_000) * pricing.prompt +
     (completionTokens / 1_000_000) * pricing.completion
